@@ -1,3 +1,14 @@
+// Hill climbing style tracker
+// This does not scan a range, but constantly tries to obtain best output.. 
+
+// known problems so far:
+// unstable readings from arduino as servo is driven.. thus voltage tracking 
+// seemed more stable.. current values were fluctuating too much.. 
+// Servo will overshoot, if angle increments are large
+// servo will jitter if super capacitors are not used.. 
+// voltage for servo mustn't be too high or too low.. 
+
+
 #include <Servo.h> 
 
 
@@ -5,8 +16,11 @@ Servo EWservo;
 double mW;
 double mWPrev=0;
 double mWNow;
+double difference;
 int angle=90;
 
+double VPrev = 0; //previous voltage.. 
+double VNow;
 void setup()
 {
 
@@ -31,47 +45,35 @@ void loop()
   //delay(2000);
   
   
-  mWNow =  get_mW(); 
+  //mWNow =  get_mW();       // not used now, as unstable mW values at present.. 
+  
+  //difference = mWNow -mWPrev;   // on power
+  VNow = analogRead(0);
+  difference = VNow - VPrev;
   
   
-  
-  if (mWNow > mWPrev)
+  if(difference >= 0)
   {
-    
-    angle = angle+10;
+    angle = angle + 5;
     EWservo.write(angle);
+    delay(500);
+    //mWPrev = mWNow;
+    VPrev = VNow;
+    //Serial.println("positive");
     
-    mWPrev = mWNow;          // set previous value to 'now'
-    mWNow = get_mW();        // get new mW value
-    
-     delay(20000);
-     
-     if(mWNow > mWPrev)    // keep increasing angle, else down.
-     {
-       angle = angle+10;
-       EWservo.write(angle);
-       mWPrev = mWNow; 
-       
-     }
-     else{
-       angle = angle-10;
-       EWservo.write(angle);
-       mWPrev = mWNow; 
-     }
-         
   }
+  else
+  {
+    angle = angle - 5;
+    EWservo.write(angle);
+    delay(500);
+    //mWPrev = mWNow;
+    VPrev = VNow;
+    //Serial.println("neg");
     
-  
-    
-  
-  Serial.println(mW);
-  
-  //delay(1000);
-  
+  }
   
 }
-
-
 
 
   double get_mW() {
@@ -84,13 +86,26 @@ void loop()
   for (int i=0; i<10; i++) {                         // Average the voltage over 10 readings every 50mS
    double analogValue = analogRead(0);
    Volts = Volts +  ((analogValue *4.95)/1023);
+   
    double AnValue = analogRead(3);
    controlVolts = controlVolts +  ((AnValue * 4.95)/1023);
    double currentValue = analogRead(1);
+   
    Amps = Amps +  ((currentValue * 4.95)/1023);
+   
+   
+   
    
 //   delay(2);
   }
+  
+  Amps = Amps*100;
+  Serial.print(Volts);
+  //Serial.print(" ");
+  //Serial.print(Amps);
+  //Serial.print(" ");
+  //Serial.println(Volts*Amps);
+  Serial.println("here");
   
   }
 
